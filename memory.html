@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Memory Match</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top left, #4f46e5 0%, #111827 40%),
+                  radial-gradient(circle at bottom right, #22d3ee 0%, transparent 45%);
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      font-size: clamp(2rem, 4vw, 3rem);
+    }
+
+    p {
+      margin-bottom: 24px;
+      color: #cbd5e1;
+    }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .stat {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
+      padding: 14px 20px;
+      border-radius: 18px;
+      min-width: 130px;
+      box-shadow: 0 16px 50px rgba(15, 23, 42, 0.2);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.3rem;
+      margin-top: 6px;
+      color: #f8fafc;
+    }
+
+    .board {
+      width: min(540px, 100%);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      padding-top: 100%;
+      perspective: 1000px;
+      cursor: pointer;
+    }
+
+    .card-inner {
+      position: absolute;
+      inset: 0;
+      transition: transform 0.4s;
+      transform-style: preserve-3d;
+      border-radius: 18px;
+      transform: rotateY(0deg);
+    }
+
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 2rem;
+      color: #0f172a;
+      backface-visibility: hidden;
+    }
+
+    .card-front {
+      background: #38bdf8;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    .card-back {
+      background: rgba(255,255,255,0.08);
+      transform: rotateY(180deg);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
+    }
+
+    .card.disabled {
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #22d3ee, #8b5cf6);
+      color: #0f172a;
+      padding: 14px 24px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.25s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 620px) {
+      .board { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <h1>🧠 Memory Match</h1>
+  <p>Tap matching pairs as fast as you can. Flip cards and remember the pattern!</p>
+
+  <div class="stats">
+    <div class="stat">
+      Moves
+      <strong id="moves">0</strong>
+    </div>
+    <div class="stat">
+      Matches
+      <strong id="matches">0</strong>
+    </div>
+    <div class="stat">
+      Best
+      <strong id="best">--</strong>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+  <button type="button" onclick="resetGame()">Restart Game</button>
+  <button type="button" onclick="window.location.href='../index.html'">Back to Dashboard</button>
+
+  <script>
+    const board = document.getElementById('board');
+    const movesEl = document.getElementById('moves');
+    const matchesEl = document.getElementById('matches');
+    const bestEl = document.getElementById('best');
+
+    const symbols = ['🍎','🍌','🍇','🍒','🥝','🍓','🍍','🍉'];
+    let cards = [...symbols, ...symbols];
+    let firstCard = null;
+    let secondCard = null;
+    let moves = 0;
+    let matches = 0;
+    let locked = false;
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function createBoard() {
+      shuffle(cards);
+      board.innerHTML = '';
+      cards.forEach((symbol, index) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.symbol = symbol;
+        card.innerHTML = `
+          <div class="card-inner">
+            <div class="card-face card-front">?</div>
+            <div class="card-face card-back">${symbol}</div>
+          </div>`;
+        card.addEventListener('click', () => flipCard(card));
+        board.appendChild(card);
+      });
+    }
+
+    function flipCard(card) {
+      if (locked || card === firstCard || card.classList.contains('disabled')) return;
+      card.classList.add('flipped');
+
+      if (!firstCard) {
+        firstCard = card;
+        return;
+      }
+
+      secondCard = card;
+      locked = true;
+      moves++;
+      movesEl.textContent = moves;
+
+      if (firstCard.dataset.symbol === secondCard.dataset.symbol) {
+        matches++;
+        matchesEl.textContent = matches;
+        firstCard.classList.add('disabled');
+        secondCard.classList.add('disabled');
+        resetSelection();
+        if (matches === symbols.length) {
+          const best = localStorage.getItem('memoryBest');
+          if (!best || moves < best) {
+            localStorage.setItem('memoryBest', moves);
+            bestEl.textContent = moves;
+          }
+          setTimeout(() => alert('Amazing! You matched all cards with ' + moves + ' moves.'), 300);
+        }
+      } else {
+        setTimeout(() => {
+          firstCard.classList.remove('flipped');
+          secondCard.classList.remove('flipped');
+          resetSelection();
+        }, 900);
+      }
+    }
+
+    function resetSelection() {
+      [firstCard, secondCard] = [null, null];
+      locked = false;
+    }
+
+    function resetGame() {
+      moves = 0;
+      matches = 0;
+      movesEl.textContent = 0;
+      matchesEl.textContent = 0;
+      bestEl.textContent = localStorage.getItem('memoryBest') || '--';
+      firstCard = null;
+      secondCard = null;
+      locked = false;
+      cards = [...symbols, ...symbols];
+      createBoard();
+    }
+
+    bestEl.textContent = localStorage.getItem('memoryBest') || '--';
+    resetGame();
+  </script>
+</body>
+</html>

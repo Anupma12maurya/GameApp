@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quiz Game</title>
+
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial;
+      background: #222;
+      color: white;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 30px;
+    }
+
+    .question {
+      background: white;
+      color: black;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px auto;
+      max-width: 600px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 10px;
+      border: none;
+      background: #4facfe;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: #007bff;
+    }
+
+    #score {
+      margin-top: 20px;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🧠 Quiz Game</h1>
+
+<div id="quiz-container">
+  <div class="question" id="question"></div>
+  <div class="options" id="options"></div>
+</div>
+
+<div id="score">Score: 0</div>
+<button type="button" onclick="window.location.href='../index.html'">Back to Dashboard</button>
+
+<script>
+const questions = [
+  {
+    question: "What is the capital of France?",
+    options: ["London", "Berlin", "Paris", "Madrid"],
+    answer: "Paris"
+  },
+  {
+    question: "Which planet is known as the Red Planet?",
+    options: ["Venus", "Mars", "Jupiter", "Saturn"],
+    answer: "Mars"
+  },
+  {
+    question: "What is 2 + 2?",
+    options: ["3", "4", "5", "6"],
+    answer: "4"
+  },
+  {
+    question: "Who painted the Mona Lisa?",
+    options: ["Van Gogh", "Picasso", "Da Vinci", "Michelangelo"],
+    answer: "Da Vinci"
+  }
+];
+
+let currentQuestion = 0;
+let score = 0;
+
+function loadQuestion() {
+  if (currentQuestion >= questions.length) {
+    document.getElementById("quiz-container").innerHTML = "<h2>Quiz Complete!</h2><p>Your final score: " + score + "/" + questions.length + "</p>";
+    return;
+  }
+
+  const q = questions[currentQuestion];
+  document.getElementById("question").innerHTML = "<h3>" + q.question + "</h3>";
+  
+  const optionsDiv = document.getElementById("options");
+  optionsDiv.innerHTML = "";
+  
+  q.options.forEach(option => {
+    const btn = document.createElement("button");
+    btn.innerText = option;
+    btn.onclick = () => checkAnswer(option);
+    optionsDiv.appendChild(btn);
+  });
+}
+
+function checkAnswer(selected) {
+  if (selected === questions[currentQuestion].answer) {
+    score++;
+  }
+  document.getElementById("score").innerText = "Score: " + score;
+  currentQuestion++;
+  loadQuestion();
+}
+
+loadQuestion();
+</script>
+
+</body>
+</html>
